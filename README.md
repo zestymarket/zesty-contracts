@@ -1,6 +1,26 @@
 # Zesty Market Smart Contracts
 This repository possesses the smart contracts used by Zesty Market.
 
+## Quickstart
+1. Install hardhat with npx
+```
+npx hardhat
+```
+
+1. Create a `.env` file with the following information
+```
+INFURA_PROJECT_ID=<Get this from infura.io>
+PRIVATE_KEY=<Get this from your eth account>
+```
+
+1. Compile, test, and run
+```
+npx hardhat compile
+npx hardhat test
+npx hardhat run scripts/deploy.js  // local deploy
+npx hardhat run scripts/deploy.js --network rinkeby  // rinkeby deploy
+```
+
 ## Overview
 The smart contracts fall into three key categories, core, governance, and profit sharing.
 

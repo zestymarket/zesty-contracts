@@ -10,3 +10,6 @@ artifacts/
 .DS_Store
 .vscode/
 *.swp
+
+# secrets
+.env

@@ -14,6 +14,12 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     constructor()  ERC721("Zesty Market NFT", "ZESTNFT") {
     }
 
+    event SetTokenGroupURI(
+        address indexed publisher,
+        uint256 indexed tokenGroup,
+        string tokenGroupURI
+    );
+
     event Mint(
         uint256 indexed id,
         uint256 indexed tokenGroup,
@@ -24,7 +30,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeEnd,
         string location,  // location refers to the ad slot on the publisher's app or site
         string uri,  // uri refers to the media that will be served on the ad slot
-        string tokenName,
         uint256 timeModified
     );
     
@@ -45,22 +50,21 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeEnd,
         string location,
         string uri,
-        string tokenName,
         uint256 timeModified
     );
 
     struct adData {
-        uint256 tokenGroup;  
+        uint256 tokenGroup;
         address publisher;
         address advertiser;
         uint256 timeCreated;
         uint256 timeStart;
         uint256 timeEnd;
         string location;
-        string tokenName;
     }
 
     mapping (uint256 => adData) private _adData;
+    mapping (address => mapping (uint256 => string)) private _tokenGroupURIs;
 
     // Mints to msg.sender
     function mint(
@@ -68,8 +72,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 _timeEnd,
         uint256 _tokenGroup,
         string memory _uri,
-        string memory _location,
-        string memory _tokenName
+        string memory _location
     ) public {
         // Checks
         uint256 _timeNow = block.timestamp;
@@ -90,8 +93,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             _timeNow,
             _timeStart,
             _timeEnd,
-            _location,
-            _tokenName
+            _location
         );
 
         emit Mint(
@@ -104,7 +106,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             _timeEnd,
             _location,
             _uri,
-            _tokenName,
             block.timestamp
         );
 
@@ -139,8 +140,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeStart,
         uint256 timeEnd,
         string memory location,
-        string memory uri,
-        string memory tokenName
+        string memory uri
     ) {
         require(_exists(tokenId), "Token does not exist");
         adData storage a = _adData[tokenId];
@@ -154,8 +154,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             a.timeStart,
             a.timeEnd,
             a.location,
-            _uri,
-            a.tokenName
+            _uri
         );
     }
 
@@ -178,7 +177,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             a.timeEnd,
             a.location,
             _uri,
-            a.tokenName,
             block.timestamp
         );
     }
@@ -203,9 +201,24 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             a.timeEnd,
             a.location,
             _uri,
-            a.tokenName,
             block.timestamp
         );
+    }
+
+    function setTokenGroupURI(uint256 _tokenGroup, string memory _tokenGroupURI) public {
+        _tokenGroupURIs[msg.sender][_tokenGroup] = _tokenGroupURI;
+
+        emit SetTokenGroupURI(
+            msg.sender,
+            _tokenGroup,
+            _tokenGroupURI
+        );
+    }
+
+    function tokenGroupURI(address _publisher, uint256 _tokenGroup) public view returns (
+        string memory
+    ) {
+        return _tokenGroupURIs[_publisher][_tokenGroup];
     }
 
     function pause() public onlyOwner {

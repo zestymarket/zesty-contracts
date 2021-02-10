@@ -21,6 +21,15 @@ npx hardhat run scripts/deploy.js  // local deploy
 npx hardhat run scripts/deploy.js --network rinkeby  // rinkeby deploy
 ```
 
+1. Set up hardhat local network on metamask details
+```
+Network Name: Hardhat (or anything you want)
+New RPC URL: http://localhost:8545
+Chain ID: 31337
+Currency Symbol: DEV (or anything you want)
+Block Explorer: (Leave Blank)
+```
+
 ## Overview
 The smart contracts fall into three key categories, core, governance, and profit sharing.
 

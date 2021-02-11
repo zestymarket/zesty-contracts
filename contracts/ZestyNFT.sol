@@ -24,7 +24,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 indexed id,
         uint256 indexed tokenGroup,
         address indexed publisher,
-        address advertiser,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
@@ -44,7 +43,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 indexed id,
         uint256 indexed tokenGroup,
         address indexed publisher,
-        address advertiser,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
@@ -56,7 +54,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     struct adData {
         uint256 tokenGroup;
         address publisher;
-        address advertiser;
         uint256 timeCreated;
         uint256 timeStart;
         uint256 timeEnd;
@@ -89,7 +86,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         _adData[_tokenCount] = adData(
             _tokenGroup,
             _msgSender(),
-            address(0),
             _timeNow,
             _timeStart,
             _timeEnd,
@@ -100,7 +96,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             _tokenCount,
             _tokenGroup,
             _msgSender(),
-            address(0),
             _timeNow,
             _timeStart,
             _timeEnd,
@@ -135,7 +130,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     function getTokenData(uint256 tokenId) public view returns (
         uint256 tokenGroup,
         address publisher,
-        address advertiser,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
@@ -149,7 +143,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         return (
             a.tokenGroup,
             a.publisher,
-            a.advertiser,
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
@@ -171,7 +164,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             _tokenId,
             a.tokenGroup,
             a.publisher,
-            a.advertiser,
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
@@ -195,7 +187,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             _tokenId,
             a.tokenGroup,
             a.publisher,
-            a.advertiser,
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
@@ -206,10 +197,10 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     }
 
     function setTokenGroupURI(uint256 _tokenGroup, string memory _tokenGroupURI) public {
-        _tokenGroupURIs[msg.sender][_tokenGroup] = _tokenGroupURI;
+        _tokenGroupURIs[_msgSender()][_tokenGroup] = _tokenGroupURI;
 
         emit SetTokenGroupURI(
-            msg.sender,
+            _msgSender(),
             _tokenGroup,
             _tokenGroupURI
         );

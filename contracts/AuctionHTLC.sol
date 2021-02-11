@@ -4,10 +4,12 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./ZestyNFT.sol";
 import "./ZestyToken.sol";
 
 contract AuctionHTLC is Context, ERC721Holder {
+    using SafeMath for uint256;
     address private _tokenAddress;
     address private _NFTAddress;
     address private _validator;  // single validator implementation
@@ -38,24 +40,28 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 startPrice,
         uint256 startTime,
         uint256 endTime,
-        uint256 timestamp
+        uint256 tokenEndTime,
+        uint256 timestamp,
+        bool active
     );
 
-    event AuctionCancel(
-        uint256 indexed auctionId,
-        address indexed publisher,
-        uint256 tokenGroup,
-        uint256 tokenId,
-        uint256 timestamp
-    );
+    // event AuctionCancel(
+    //     uint256 indexed auctionId,
+    //     address indexed publisher,
+    //     uint256 tokenGroup,
+    //     uint256 tokenId,
+    //     uint256 timestamp,
+    //     bool active
+    // );
 
-    event AuctionExpire(
-        uint256 indexed auctionId,
-        address indexed publisher,
-        uint256 tokenGroup,
-        uint256 tokenId,
-        uint256 timestamp
-    );
+    // event AuctionExpire(
+    //     uint256 indexed auctionId,
+    //     address indexed publisher,
+    //     uint256 tokenGroup,
+    //     uint256 tokenId,
+    //     uint256 timestamp,
+    //     bool active
+    // );
 
     event AuctionSuccess(
         uint256 indexed auctionId,
@@ -64,7 +70,8 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 tokenGroup,
         uint256 tokenId,
         uint256 bidPrice,
-        uint256 timestamp
+        uint256 timestamp,
+        bool active
     );
 
     struct Auction {
@@ -75,6 +82,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 startPrice;
         uint256 startTime;
         uint256 endTime;
+        uint256 tokenEndTime;
         uint256 bidPrice;
         bool active;
     }
@@ -102,6 +110,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256,
         uint256,
         uint256,
+        uint256,
         bool
     ) {
         Auction storage a = _auctions[_auctionId];
@@ -114,6 +123,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             a.startPrice,
             a.startTime,
             a.endTime,
+            a.tokenEndTime,
             a.bidPrice,
             a.active
         );
@@ -168,6 +178,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             _startPrice,
             block.timestamp,
             _endTime,
+            _tokenTimeEnd,
             uint256(0),
             true
          );
@@ -180,9 +191,43 @@ contract AuctionHTLC is Context, ERC721Holder {
             _startPrice,
             block.timestamp,
             _endTime,
-            block.timestamp
+            _tokenTimeEnd,
+            block.timestamp,
+            true
         );
         _auctionCount++;
+    }
+
+    function bidAuction(uint256 _auctionId) public {
+        Auction storage a = _auctions[_auctionId];
+
+        require(a.active, "Auction is not active");
+        require(a.publisher != _msgSender(), "Cannot bid on own auction");
+
+        uint256 timeNow = block.timestamp;
+        uint256 timePassed = timeNow.sub(a.startTime);
+        uint256 timeTotal = a.tokenEndTime.sub(a.startTime);
+        uint256 gradient = a.startPrice.div(timeTotal);
+        uint256 bidPrice = a.startPrice.sub(gradient.mul(timePassed));
+
+        if(!_zestyToken.transferFrom(_msgSender(), address(this), bidPrice)) {
+            revert("Transfer $ZEST failed");
+        }
+
+        a.active = false;
+        a.bidPrice = bidPrice;
+        a.advertiser = _msgSender();
+
+        emit AuctionSuccess(
+            _auctionId,
+            a.publisher,
+            a.advertiser,
+            a.tokenGroup,
+            a.tokenId,
+            a.bidPrice,
+            timeNow,
+            false
+        );
     }
 
 

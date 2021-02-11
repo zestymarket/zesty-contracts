@@ -83,5 +83,9 @@ describe('AuctionHTLC', function() {
     expect(data[1] === signers[1].address);  // advertiser
     expect(!data[9]);  // active
 
-  })
+    // check if auction has tokens
+    const balance = await zestyToken.balanceOf(auctionHTLC.address);
+    // this happened instantaneously so bid price is start price
+    expect(balance.eq(ethers.BigNumber.from(1000)));
+  });
 });

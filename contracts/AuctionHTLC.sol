@@ -333,6 +333,11 @@ contract AuctionHTLC is Context, ERC721Holder {
          _contractCount++;
     }
 
+    function setTokenURI(uint256 _contractId, string memory _uri) public { 
+        Contract storage c = _contracts[_contractId];
+        _zestyNFT.setTokenURI(c.tokenId, _uri);
+    }
+
     function setHashlock(
         uint256 _contractId, 
         bytes32 _hashlock, 

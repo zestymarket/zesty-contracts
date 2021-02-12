@@ -116,6 +116,19 @@ describe('AuctionHTLC', function() {
     expect(contractData[10] === 0);
   });
 
+  it('It should allow an advertiser to change token URI upon successful bid', async function() {
+    await auctionHTLC.startAuction(
+      0,
+      1000,
+      timeNow + 90000,
+    );    
+    await auctionHTLC.connect(signers[1]).bidAuction(0);
+
+    await auctionHTLC.connect(signers[1]).setTokenURI(0, 'test');
+
+    expect(await zestyNFT.tokenURI(0)).to.equal('test');
+  });
+
   it('It should allow a validator to set a hashlock and distribute shares', async function() {
     await auctionHTLC.startAuction(
       0,

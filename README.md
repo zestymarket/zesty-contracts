@@ -1,6 +1,13 @@
 # Zesty Market Smart Contracts
 This repository possesses the smart contracts used by Zesty Market.
 
+Contracts are deployed on rinkeby
+```
+ZestyNFT deployed to: 0xf94509332f98d0Fbf458778923B878F3B0dDB044
+ZestyToken deployed to: 0x711E6161362bdb6278CAb3FfeBc8891EA41bC08B
+AuctionHTLC deployed to: 0x3a1cDDFF91FDEEC6990b73BC7f9F9F38075901a7
+```
+
 ## Quickstart
 1. Install hardhat with npx
 ```

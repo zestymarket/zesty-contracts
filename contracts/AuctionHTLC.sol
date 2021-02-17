@@ -343,6 +343,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         bytes32 _hashlock, 
         uint32 _totalShares
     ) public {
+        require(c.publisher != address(0), "Contract does not exist");
         require(_msgSender() == _validator, "Not validator");
 
         Contract storage c = _contracts[_contractId];

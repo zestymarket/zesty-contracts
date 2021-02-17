@@ -30,8 +30,8 @@ describe('AuctionHTLC', function() {
     zestyToken = await ZestyToken.deploy();
     await zestyToken.deployed();
 
-    const d = new Date();
-    timeNow = Math.round(d.getTime() / 1000);
+    timeNow = await time.latest();
+    timeNow = timeNow.toNumber();
     await zestyNFT.mint(
       timeNow + 100,
       timeNow + 100000,
@@ -79,9 +79,20 @@ describe('AuctionHTLC', function() {
     expect(await zestyNFT.ownerOf(0) === auctionHTLC.address);
   });
 
-  it('It should not allow bidding on an inactive auction', async function() {
+  it('It should not allow bidding on an auction that does not exist', async function() {
     await expect(auctionHTLC.bidAuction(10)).to.be.reverted;
   });
+
+  it('It should not allow biding on an auction that has expired', async function() {
+    await auctionHTLC.startAuction(
+      0,
+      1000,
+      timeNow + 90000,
+    ); 
+    await time.increase(timeNow + 100000);
+    await expect(auctionHTLC.bidAuction(0)).to.be.reverted;
+
+  })
 
   it('It should allow for bidding on an active auction', async function() {
     await auctionHTLC.startAuction(

@@ -291,7 +291,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 bidPrice = a.startPrice.sub(gradient.mul(timePassed));
 
         if(!_zestyToken.transferFrom(_msgSender(), address(this), bidPrice)) {
-            revert("Transfer $ZEST failed");
+            revert("Transfer $ZEST failed, check if sufficient allowance is provided");
         }
 
         a.active = false;

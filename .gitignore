@@ -10,6 +10,7 @@ artifacts/
 .DS_Store
 .vscode/
 *.swp
+misctest.js
 
 # secrets
-.env
+.env*

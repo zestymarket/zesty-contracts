@@ -46,9 +46,9 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 tokenGroup,
         uint256 tokenId,
         uint256 startPrice,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 tokenEndTime,
+        uint256 timeStart,
+        uint256 timeEnd,
+        uint256 timeEndToken,
         uint256 timestamp,
         bool active
     );

@@ -1,20 +1,9 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional 
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
+const { time } = require('@openzeppelin/test-helpers');
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile 
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
   signers = await ethers.getSigners();
 
-  // We get the contract to deploy
   const ZestyNFT = await hre.ethers.getContractFactory("ZestyNFT");
   const zestyNFT = await ZestyNFT.deploy();
   await zestyNFT.deployed();
@@ -34,11 +23,15 @@ async function main() {
   await auctionHTLC.deployed();
   console.log("AuctionHTLC deployed to:", auctionHTLC.address);
 
+  timeNow = await time.latest();
+  timeNow = timeNow.toNumber();
+
+  await zestyNFT.setTokenGroupURI(0, 'https://ipfs.io/ipfs/QmUE7A69FH3MobZLGpfprGBfLErbq3HmyX9NDdSJq82Dbv');
   await zestyNFT.mint(
     timeNow + 100,
     timeNow + 100000,
     0,
-    'testURI',
+    'https://ipfs.io/ipfs/QmUE7A69FH3MobZLGpfprGBfLErbq3HmyX9NDdSJq82Dbv',
     'testLocation'
   );
   await zestyNFT.approve(auctionHTLC.address, 0);
@@ -53,8 +46,6 @@ async function main() {
   
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main()
   .then(() => process.exit(0))
   .catch(error => {

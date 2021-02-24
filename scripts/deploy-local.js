@@ -34,22 +34,22 @@ async function main() {
   await auctionHTLC.deployed();
   console.log("AuctionHTLC deployed to:", auctionHTLC.address);
 
-  // await zestyNFT.mint(
-  //   timeNow + 100,
-  //   timeNow + 100000,
-  //   0,
-  //   'testURI',
-  //   'testLocation'
-  // );
-  // await zestyNFT.approve(auctionHTLC.address, 0);
-  // await zestyToken.approve(auctionHTLC.address, 10000000);
-  // await zestyToken.transfer(signers[1].address, 100000);
-  // await zestyToken.connect(signers[1]).approve(auctionHTLC.address, 10000000)
-  // await auctionHTLC.startAuction(
-  //   0,
-  //   1000,
-  //   timeNow + 90000,
-  // );
+  await zestyNFT.mint(
+    timeNow + 100,
+    timeNow + 100000,
+    0,
+    'testURI',
+    'testLocation'
+  );
+  await zestyNFT.approve(auctionHTLC.address, 0);
+  await zestyToken.approve(auctionHTLC.address, 10000000);
+  await zestyToken.transfer(signers[1].address, 100000);
+  await zestyToken.connect(signers[1]).approve(auctionHTLC.address, 10000000)
+  await auctionHTLC.startAuction(
+    0,
+    1000,
+    timeNow + 90000,
+  );
   
 }
 

@@ -51,7 +51,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeModified
     );
 
-    struct adData {
+    struct tokenData {
         uint256 tokenGroup;
         address publisher;
         uint256 timeCreated;
@@ -60,7 +60,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         string location;
     }
 
-    mapping (uint256 => adData) private _adData;
+    mapping (uint256 => tokenData) private _adData;
     mapping (address => mapping (uint256 => string)) private _tokenGroupURIs;
 
     // Mints to msg.sender
@@ -83,7 +83,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         // set uri
         _setTokenURI(_tokenCount, _uri);
 
-        _adData[_tokenCount] = adData(
+        _adData[_tokenCount] = tokenData(
             _tokenGroup,
             _msgSender(),
             _timeNow,
@@ -111,8 +111,8 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "Caller is not owner nor approved");
         
-        // Get adData
-        adData storage a = _adData[_tokenId];
+        // Get tokenData
+        tokenData storage a = _adData[_tokenId];
         
         emit Burn(
             _tokenId,
@@ -121,7 +121,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             block.timestamp
         );        
 
-        // Clear ad adData
+        // Clear ad tokenData
         delete _adData[_tokenId];
         
         _burn(_tokenId);
@@ -137,7 +137,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         string memory uri
     ) {
         require(_exists(tokenId), "Token does not exist");
-        adData storage a = _adData[tokenId];
+        tokenData storage a = _adData[tokenId];
         string memory _uri = tokenURI(tokenId);
 
         return (
@@ -154,7 +154,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     function setTokenURI(uint256 _tokenId, string memory _uri) public {
         require(_exists(_tokenId), "Token does not exist");
 
-        adData storage a = _adData[_tokenId];
+        tokenData storage a = _adData[_tokenId];
 
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "Caller is not owner or approved");
 
@@ -176,7 +176,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     function setTokenGroup(uint256 _tokenId, uint256 _tokenGroup) public {
         require(_exists(_tokenId), "Token does not exist");
 
-        adData storage a = _adData[_tokenId];
+        tokenData storage a = _adData[_tokenId];
 
         require(a.publisher == _msgSender(), "Not publisher of NFT");
 

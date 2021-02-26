@@ -62,7 +62,7 @@ The smart contracts fall into three key categories, core, governance, and profit
               The publisher gets to set the starting price from which the price would decay linearly till 0 when the advertising slot expires.
               The formula used, price is measured in $ZEST, time is measured in unix time.
               ```
-              current_price = starting_price - starting_price / (time_end - time_start) * (time_current - time_start)
+              current_price = starting_price - starting_price / (time_end_token - time_start) * (time_current - time_start)
               ```
 
               The first bidder is the winner of the Dutch Auction. Upon successful auction, the system proceeds to the second section locking the bidded $ZEST.

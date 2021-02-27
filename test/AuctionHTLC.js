@@ -35,9 +35,8 @@ describe('AuctionHTLC', function() {
     await zestyNFT.mint(
       timeNow + 100,
       timeNow + 100000,
-      0,
       'testURI',
-      'testLocation'
+      'tokenGroup'
     );
 
 
@@ -66,7 +65,7 @@ describe('AuctionHTLC', function() {
     const data = await auctionHTLC.getAuction(0);
     expect(data[0] === signers[0].address); // publisher
     expect(data[1] === ethers.constants.AddressZero);  // advertiser
-    expect(data[2].eq(ethers.constants.Zero));  // tokenGroup
+    expect(data[2]).to.equal('tokenGroup');  // tokenGroup
     expect(data[3].eq(ethers.constants.Zero));  // tokenId
     expect(data[4].eq(ethers.BigNumber.from(1000)));  // startPrice
     expect(data[5].eq(ethers.BigNumber.from(timeNow + 100))); // startTime
@@ -116,7 +115,7 @@ describe('AuctionHTLC', function() {
     const contractData = await auctionHTLC.getContract(0);
     expect(contractData[0] === signers[0].address);
     expect(contractData[1] === signers[1].address);
-    expect(contractData[2].eq(ethers.constants.Zero));
+    expect(contractData[2]).to.equal('tokenGroup');
     expect(contractData[3].eq(ethers.constants.Zero));
     expect(contractData[4].eq(ethers.BigNumber.from(1000)));
     expect(contractData[5] === ethers.constants.HashZero);

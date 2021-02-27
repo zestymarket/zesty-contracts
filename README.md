@@ -87,3 +87,10 @@ The smart contracts fall into three key categories, core, governance, and profit
 1. **Governance (TODO)**: These set of contracts provide governance utilizing the ERC20 as the governance token
 
 1. **Profit Sharing (TODO)**: These set of contracts provide profit sharing functionality 
+
+
+## Security
+No audits by external security teams have been done yet. Formal verification and static analysis has been done internally using the following tools. 
+
+1. [slither](https://github.com/crytic/slither)
+2. [securify2](https://github.com/eth-sri/securify2)

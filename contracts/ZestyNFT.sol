@@ -14,62 +14,50 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     constructor()  ERC721("Zesty Market NFT", "ZESTNFT") {
     }
 
-    event SetTokenGroupURI(
-        address indexed publisher,
-        uint256 indexed tokenGroup,
-        string tokenGroupURI
-    );
-
     event Mint(
         uint256 indexed id,
-        uint256 indexed tokenGroup,
         address indexed publisher,
+        string tokenGroup,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
-        string location,  // location refers to the ad slot on the publisher's app or site
-        string uri,  // uri refers to the media that will be served on the ad slot
+        string uri,
         uint256 timeModified
     );
     
     event Burn(
         uint256 indexed id,
-        uint256 indexed tokenGroup,
         address indexed publisher,
+        string tokenGroup,
         uint256 timeModified
     );
 
     event ModifyToken (
         uint256 indexed id,
-        uint256 indexed tokenGroup,
         address indexed publisher,
+        string tokenGroup,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
-        string location,
         string uri,
         uint256 timeModified
     );
 
     struct tokenData {
-        uint256 tokenGroup;
+        string tokenGroup;
         address publisher;
         uint256 timeCreated;
         uint256 timeStart;
         uint256 timeEnd;
-        string location;
     }
 
-    mapping (uint256 => tokenData) private _adData;
-    mapping (address => mapping (uint256 => string)) private _tokenGroupURIs;
+    mapping (uint256 => tokenData) private _tokenData;
 
-    // Mints to msg.sender
     function mint(
         uint256 _timeStart,
         uint256 _timeEnd,
-        uint256 _tokenGroup,
         string memory _uri,
-        string memory _location
+        string memory _tokenGroup
     ) public {
         // Checks
         uint256 _timeNow = block.timestamp;
@@ -78,28 +66,26 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         require(_timeEnd > _timeStart, "Ending time is before timeStart");
 
         // mint token
-        _safeMint(_msgSender(), _tokenCount);
+        _safeMint(_msgSender(), _tokenCount); 
 
         // set uri
         _setTokenURI(_tokenCount, _uri);
 
-        _adData[_tokenCount] = tokenData(
+        _tokenData[_tokenCount] = tokenData(
             _tokenGroup,
             _msgSender(),
             _timeNow,
             _timeStart,
-            _timeEnd,
-            _location
+            _timeEnd
         );
 
         emit Mint(
             _tokenCount,
-            _tokenGroup,
             _msgSender(),
+            _tokenGroup,
             _timeNow,
             _timeStart,
             _timeEnd,
-            _location,
             _uri,
             block.timestamp
         );
@@ -112,32 +98,31 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "Caller is not owner nor approved");
         
         // Get tokenData
-        tokenData storage a = _adData[_tokenId];
+        tokenData storage a = _tokenData[_tokenId];
         
         emit Burn(
             _tokenId,
-            a.tokenGroup,
             a.publisher,
+            a.tokenGroup,
             block.timestamp
         );        
 
         // Clear ad tokenData
-        delete _adData[_tokenId];
+        delete _tokenData[_tokenId];
         
         _burn(_tokenId);
     }
 
     function getTokenData(uint256 tokenId) public view returns (
-        uint256 tokenGroup,
+        string memory tokenGroup,
         address publisher,
         uint256 timeCreated,
         uint256 timeStart,
         uint256 timeEnd,
-        string memory location,
         string memory uri
     ) {
         require(_exists(tokenId), "Token does not exist");
-        tokenData storage a = _adData[tokenId];
+        tokenData storage a = _tokenData[tokenId];
         string memory _uri = tokenURI(tokenId);
 
         return (
@@ -146,7 +131,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
-            a.location,
             _uri
         );
     }
@@ -154,7 +138,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     function setTokenURI(uint256 _tokenId, string memory _uri) public {
         require(_exists(_tokenId), "Token does not exist");
 
-        tokenData storage a = _adData[_tokenId];
+        tokenData storage a = _tokenData[_tokenId];
 
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "Caller is not owner or approved");
 
@@ -162,21 +146,20 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
 
         emit ModifyToken(
             _tokenId,
-            a.tokenGroup,
             a.publisher,
+            a.tokenGroup,
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
-            a.location,
             _uri,
             block.timestamp
         );
     }
 
-    function setTokenGroup(uint256 _tokenId, uint256 _tokenGroup) public {
+    function setTokenGroup(uint256 _tokenId, string memory _tokenGroup) public {
         require(_exists(_tokenId), "Token does not exist");
 
-        tokenData storage a = _adData[_tokenId];
+        tokenData storage a = _tokenData[_tokenId];
 
         require(a.publisher == _msgSender(), "Not publisher of NFT");
 
@@ -185,31 +168,14 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
 
         emit ModifyToken(
             _tokenId,
-            a.tokenGroup,
             a.publisher,
+            a.tokenGroup,
             a.timeCreated,
             a.timeStart,
             a.timeEnd,
-            a.location,
             _uri,
             block.timestamp
         );
-    }
-
-    function setTokenGroupURI(uint256 _tokenGroup, string memory _tokenGroupURI) public {
-        _tokenGroupURIs[_msgSender()][_tokenGroup] = _tokenGroupURI;
-
-        emit SetTokenGroupURI(
-            _msgSender(),
-            _tokenGroup,
-            _tokenGroupURI
-        );
-    }
-
-    function tokenGroupURI(address _publisher, uint256 _tokenGroup) public view returns (
-        string memory
-    ) {
-        return _tokenGroupURIs[_publisher][_tokenGroup];
     }
 
     function pause() public onlyOwner {

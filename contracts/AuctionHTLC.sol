@@ -43,7 +43,7 @@ contract AuctionHTLC is Context, ERC721Holder {
     event AuctionStart(
         uint256 indexed auctionId,
         address indexed publisher,
-        uint256 tokenGroup,
+        string tokenGroup,
         uint256 tokenId,
         uint256 startPrice,
         uint256 timeStart,
@@ -75,7 +75,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 indexed auctionId,
         address indexed publisher,
         address indexed advertiser,
-        uint256 tokenGroup,
+        string tokenGroup,
         uint256 tokenId,
         uint256 bidPrice,
         uint256 timestamp,
@@ -85,12 +85,12 @@ contract AuctionHTLC is Context, ERC721Holder {
     struct Auction {
         address publisher;
         address advertiser;
-        uint256 tokenGroup;
+        string tokenGroup;
         uint256 tokenId;
         uint256 startPrice;
-        uint256 startTime;
-        uint256 endTime;
-        uint256 tokenEndTime;
+        uint256 timeStart;
+        uint256 timeEnd;
+        uint256 timeEndToken;
         uint256 bidPrice;
         bool active;
     }
@@ -102,7 +102,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 indexed contractId,
         address indexed publisher, 
         address indexed advertiser,
-        uint256 tokenGroup,
+        string tokenGroup,
         uint256 tokenId,
         uint256 amount,
         uint256 timelock 
@@ -125,7 +125,7 @@ contract AuctionHTLC is Context, ERC721Holder {
     struct Contract {
         address publisher;
         address advertiser;
-        uint256 tokenGroup;
+        string tokenGroup;
         uint256 tokenId;
         uint256 amount;
         bytes32 hashlock;
@@ -154,7 +154,7 @@ contract AuctionHTLC is Context, ERC721Holder {
     function getAuction(uint256 _auctionId) public view returns (
         address,
         address,
-        uint256,
+        string memory,
         uint256,
         uint256,
         uint256,
@@ -171,9 +171,9 @@ contract AuctionHTLC is Context, ERC721Holder {
             a.tokenGroup,
             a.tokenId,
             a.startPrice,
-            a.startTime,
-            a.endTime,
-            a.tokenEndTime,
+            a.timeStart,
+            a.timeEnd,
+            a.timeEndToken,
             a.bidPrice,
             a.active
         );
@@ -182,7 +182,7 @@ contract AuctionHTLC is Context, ERC721Holder {
     function getContract(uint256 _contractId) public view returns (
         address,
         address,
-        uint256,
+        string memory,
         uint256,
         uint256,
         bytes32,
@@ -212,7 +212,7 @@ contract AuctionHTLC is Context, ERC721Holder {
     function startAuction(
         uint256 _tokenId,
         uint256 _startPrice,
-        uint256 _endTime
+        uint256 _timeEnd
     ) public {
         require(
             _zestyNFT.getApproved(_tokenId) == address(this),
@@ -223,28 +223,26 @@ contract AuctionHTLC is Context, ERC721Holder {
             "Starting Price of the Dutch auction must be greater than 0"
         );
         require(
-            _endTime > block.timestamp,
+            _timeEnd > block.timestamp,
             "Ending time of the Dutch auction must be in the future"
         );
 
-        uint256 _tokenGroup;
+        string memory _tokenGroup;
         address _publisher;
         uint256 _timeCreated;
         uint256 _tokenTimeStart;
-        uint256 _tokenTimeEnd;
-        string memory _location;
+        uint256 _timeEndToken;
         string memory _uri;
 
         (_tokenGroup,
          _publisher,
          _timeCreated,
          _tokenTimeStart,
-         _tokenTimeEnd,
-         _location,
+         _timeEndToken,
          _uri) = _zestyNFT.getTokenData(_tokenId);
 
         require(
-            _tokenTimeEnd > _endTime,
+            _timeEndToken > _timeEnd,
             "Ending time of auction is later than expiry of token"
         );
 
@@ -257,8 +255,8 @@ contract AuctionHTLC is Context, ERC721Holder {
             _tokenId,
             _startPrice,
             block.timestamp,
-            _endTime,
-            _tokenTimeEnd,
+            _timeEnd,
+            _timeEndToken,
             uint256(0),
             true
          );
@@ -270,8 +268,8 @@ contract AuctionHTLC is Context, ERC721Holder {
             _tokenId,
             _startPrice,
             block.timestamp,
-            _endTime,
-            _tokenTimeEnd,
+            _timeEnd,
+            _timeEndToken,
             block.timestamp,
             true
         );
@@ -285,8 +283,8 @@ contract AuctionHTLC is Context, ERC721Holder {
         require(a.publisher != _msgSender(), "Cannot bid on own auction");
 
         uint256 timeNow = block.timestamp;
-        uint256 timePassed = timeNow.sub(a.startTime);
-        uint256 timeTotal = a.tokenEndTime.sub(a.startTime);
+        uint256 timePassed = timeNow.sub(a.timeStart);
+        uint256 timeTotal = a.timeEndToken.sub(a.timeStart);
         uint256 gradient = a.startPrice.div(timeTotal);
         uint256 bidPrice = a.startPrice.sub(gradient.mul(timePassed));
 
@@ -316,7 +314,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         c.tokenGroup = a.tokenGroup;
         c.tokenId = a.tokenId;
         c.amount = a.bidPrice;
-        c.timelock = a.tokenEndTime.add(14400); // add 4 hr to the end of ad slot
+        c.timelock = a.timeEndToken.add(14400); // add 4 hr to the end of ad slot
         c.withdrawn = false;
         c.refunded = false;
 
@@ -327,7 +325,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             a.tokenGroup,
             a.tokenId,
             a.bidPrice,
-            a.tokenEndTime.add(14400)
+            a.timeEndToken.add(14400)
         );
 
          _contractCount++;

@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./ZestyNFT.sol";
 import "./ZestyToken.sol";
-import "hardhat/console.sol";
 
 
 contract AuctionHTLC is Context, ERC721Holder {

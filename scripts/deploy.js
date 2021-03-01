@@ -19,6 +19,27 @@ async function main() {
   );
   await auctionHTLC.deployed();
   console.log("AuctionHTLC deployed to:", auctionHTLC.address);
+
+  timeNow = Math.floor(Date.now() / 1000);
+  let data = await zestyNFT.mint(
+    timeNow + 1000,
+    timeNow + 100000,
+    'test',
+    'https://ipfs.io/ipfs/QmUE7A69FH3MobZLGpfprGBfLErbq3HmyX9NDdSJq82Dbv',
+    { gasLimit: 3000000 }
+  );
+  
+  await zestyNFT.approve(auctionHTLC.address, 0, { gasLimit: 3000000});
+  await zestyToken.approve(auctionHTLC.address, 10000000, { gasLimit: 3000000});
+
+  await auctionHTLC.auctionStart(
+    0,
+    10000000,
+    timeNow + 90000,
+    { gasLimit: 3000000}
+  );
+
+  await zestyNFT.setTokenGroup(0, 'test', { gasLimit: 3000000 });
 }
 
 main()

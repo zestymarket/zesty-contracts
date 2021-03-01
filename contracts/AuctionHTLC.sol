@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./ZestyNFT.sol";
 import "./ZestyToken.sol";
+import "hardhat/console.sol";
+
 
 contract AuctionHTLC is Context, ERC721Holder {
     using SafeMath for uint256;
@@ -39,6 +41,12 @@ contract AuctionHTLC is Context, ERC721Holder {
     }
 
     // Auction Section 
+    enum AuctionState {
+        START,
+        SUCCESS,
+        EXPIRE,
+        CANCEL
+    }
 
     event AuctionStart(
         uint256 indexed auctionId,
@@ -49,37 +57,24 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 timeStart,
         uint256 timeEnd,
         uint256 timeEndToken,
-        uint256 timestamp,
-        bool active
+        uint256 timestamp
     );
-
-    // event AuctionCancel(
-    //     uint256 indexed auctionId,
-    //     address indexed publisher,
-    //     uint256 tokenGroup,
-    //     uint256 tokenId,
-    //     uint256 timestamp,
-    //     bool active
-    // );
-
-    // event AuctionExpire(
-    //     uint256 indexed auctionId,
-    //     address indexed publisher,
-    //     uint256 tokenGroup,
-    //     uint256 tokenId,
-    //     uint256 timestamp,
-    //     bool active
-    // );
-
+    event AuctionCancel(
+        uint256 indexed auctionId,
+        address indexed publisher,
+        uint256 timestamp
+    );
+    event AuctionExpire(
+        uint256 indexed auctionId,
+        address indexed publisher,
+        uint256 timestamp
+    );
     event AuctionSuccess(
         uint256 indexed auctionId,
         address indexed publisher,
         address indexed advertiser,
-        string tokenGroup,
-        uint256 tokenId,
         uint256 bidPrice,
-        uint256 timestamp,
-        bool active
+        uint256 timestamp
     );
 
     struct Auction {
@@ -92,12 +87,18 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 timeEnd;
         uint256 timeEndToken;
         uint256 bidPrice;
-        bool active;
+        AuctionState state;
     }
 
     mapping (uint256 => Auction) private _auctions;
 
     // Hash timelock contract section
+    enum ContractState {
+        START,
+        WITHDRAW,
+        REFUND,
+        CANCEL
+    }
     event ContractStart(
         uint256 indexed contractId,
         address indexed publisher, 
@@ -105,22 +106,32 @@ contract AuctionHTLC is Context, ERC721Holder {
         string tokenGroup,
         uint256 tokenId,
         uint256 amount,
-        uint256 timelock 
+        uint256 timelock,
+        uint256 timestamp
     );
-
     event ContractSetHashlock(
         uint256 indexed contractId,
         bytes32 hashlock,
-        uint32 totalShares
+        uint32 totalShares,
+        uint256 timestamp
     );
-
     event ContractSetShare(
         uint256 indexed contractId,
-        string share
+        string share,
+        uint256 timestamp
     );
-
-    event ContractWithdraw(uint256 indexed contractId);
-    event ContractRefund(uint256 indexed contractId);
+    event ContractCancel(
+        uint256 indexed contractId,
+        uint256 timestamp
+    );
+    event ContractWithdraw(
+        uint256 indexed contractId,
+        uint256 timestamp
+    );
+    event ContractRefund(
+        uint256 indexed contractId,
+        uint256 timestamp
+    );
 
     struct Contract {
         address publisher;
@@ -130,10 +141,9 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256 amount;
         bytes32 hashlock;
         uint256 timelock;
-        bool withdrawn;
-        bool refunded;
         string[] shares;
         uint32 totalShares;
+        ContractState state;
     }
 
     mapping (uint256 => Contract) private _contracts;
@@ -161,7 +171,7 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256,
         uint256,
         uint256,
-        bool
+        AuctionState
     ) {
         Auction storage a = _auctions[_auctionId];
 
@@ -175,7 +185,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             a.timeEnd,
             a.timeEndToken,
             a.bidPrice,
-            a.active
+            a.state
         );
     }
 
@@ -187,10 +197,9 @@ contract AuctionHTLC is Context, ERC721Holder {
         uint256,
         bytes32,
         uint256,
-        bool,
-        bool,
         string[] memory,
-        uint32
+        uint32,
+        ContractState
     ) {
         Contract storage c = _contracts[_contractId];
 
@@ -202,14 +211,13 @@ contract AuctionHTLC is Context, ERC721Holder {
             c.amount,
             c.hashlock,
             c.timelock,
-            c.withdrawn,
-            c.refunded,
             c.shares,
-            c.totalShares
+            c.totalShares,
+            c.state
         );
     }
 
-    function startAuction(
+    function auctionStart(
         uint256 _tokenId,
         uint256 _startPrice,
         uint256 _timeEnd
@@ -258,7 +266,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             _timeEnd,
             _timeEndToken,
             uint256(0),
-            true
+            AuctionState.START
          );
 
         emit AuctionStart(
@@ -270,29 +278,57 @@ contract AuctionHTLC is Context, ERC721Holder {
             block.timestamp,
             _timeEnd,
             _timeEndToken,
-            block.timestamp,
-            true
+            block.timestamp
         );
         _auctionCount++;
     }
 
-    function bidAuction(uint256 _auctionId) public {
+    function auctionCancel(uint256 _auctionId) public {
         Auction storage a = _auctions[_auctionId];
 
-        require(a.active, "Auction is not active");
-        require(a.publisher != _msgSender(), "Cannot bid on own auction");
+        require(a.state == AuctionState.START, "Auction is not in START state");
+        require(_msgSender() == a.publisher, "Not publisher");
 
+        if (block.timestamp < a.timeEnd) {
+            a.state = AuctionState.CANCEL;
+            emit AuctionCancel(
+                _auctionId,
+                a.publisher,
+                block.timestamp
+            );
+        } else {
+            a.state = AuctionState.EXPIRE;
+            emit AuctionExpire(
+                _auctionId,
+                a.publisher,
+                block.timestamp
+            );
+        }
+        _zestyNFT.safeTransferFrom(address(this), _msgSender(), a.tokenId);
+    }
+
+    function auctionBid(uint256 _auctionId) public {
+        Auction storage a = _auctions[_auctionId];
         uint256 timeNow = block.timestamp;
+
+        require(a.state == AuctionState.START, "Auction is not available for bidding");
+        require(a.publisher != _msgSender(), "Cannot bid on own auction");
+        require(timeNow < a.timeEnd, "Auction has expired");
+
         uint256 timePassed = timeNow.sub(a.timeStart);
         uint256 timeTotal = a.timeEndToken.sub(a.timeStart);
-        uint256 gradient = a.startPrice.div(timeTotal);
-        uint256 bidPrice = a.startPrice.sub(gradient.mul(timePassed));
+
+        // rescale the values to accomodate decimals
+        uint256 reStartPrice = a.startPrice.mul(100000);
+        uint256 gradient = reStartPrice.div(timeTotal);
+
+        uint256 bidPrice = reStartPrice.sub(gradient.mul(timePassed)).div(100000);
 
         if(!_zestyToken.transferFrom(_msgSender(), address(this), bidPrice)) {
             revert("Transfer $ZEST failed, check if sufficient allowance is provided");
         }
 
-        a.active = false;
+        a.state = AuctionState.SUCCESS;
         a.bidPrice = bidPrice;
         a.advertiser = _msgSender();
 
@@ -300,11 +336,8 @@ contract AuctionHTLC is Context, ERC721Holder {
             _auctionId,
             a.publisher,
             a.advertiser,
-            a.tokenGroup,
-            a.tokenId,
             a.bidPrice,
-            timeNow,
-            false
+            timeNow
         );
 
         // create contract
@@ -314,29 +347,32 @@ contract AuctionHTLC is Context, ERC721Holder {
         c.tokenGroup = a.tokenGroup;
         c.tokenId = a.tokenId;
         c.amount = a.bidPrice;
-        c.timelock = a.timeEndToken.add(14400); // add 4 hr to the end of ad slot
-        c.withdrawn = false;
-        c.refunded = false;
+        c.timelock = a.timeEndToken.add(86400); // add 24 hrs to the end of ad slot
+        c.state = ContractState.START;
 
         emit ContractStart(
             _contractCount,
-            a.publisher,
-            a.advertiser,
-            a.tokenGroup,
-            a.tokenId,
-            a.bidPrice,
-            a.timeEndToken.add(14400)
+            c.publisher,
+            c.advertiser,
+            c.tokenGroup,
+            c.tokenId,
+            c.amount,
+            c.timelock,
+            timeNow
         );
 
          _contractCount++;
     }
 
-    function setTokenURI(uint256 _contractId, string memory _uri) public { 
+    function contractSetTokenURI(uint256 _contractId, string memory _uri) public { 
         Contract storage c = _contracts[_contractId];
+        require(c.publisher != address(0), "Contract does not exist");
+        require(c.state == ContractState.START, "Contract already ended");
+        require(c.advertiser == _msgSender(), "Not advertiser");
         _zestyNFT.setTokenURI(c.tokenId, _uri);
     }
 
-    function setHashlock(
+    function contractSetHashlock(
         uint256 _contractId, 
         bytes32 _hashlock, 
         uint32 _totalShares
@@ -347,6 +383,7 @@ contract AuctionHTLC is Context, ERC721Holder {
 
         require(c.publisher != address(0), "Contract does not exist");
         require(c.hashlock == 0x0, "Hashlock already set");
+        require(c.state == ContractState.START, "Contract already ended");
 
         c.hashlock = _hashlock;
         c.totalShares = _totalShares;
@@ -354,13 +391,18 @@ contract AuctionHTLC is Context, ERC721Holder {
         emit ContractSetHashlock(
             _contractId, 
             c.hashlock,
-            c.totalShares
+            c.totalShares,
+            block.timestamp
         );
     }
 
-    function setShare(uint256 _contractId, string memory _share) public {
+    function contractSetShare(uint256 _contractId, string memory _share) public {
         require(_msgSender() == _validator, "Not validator");
         Contract storage c = _contracts[_contractId];
+
+        require(c.publisher != address(0), "Contract does not exist");
+        require(c.hashlock != 0x0, "Hashlock has not been set");
+        require(c.state == ContractState.START, "Contract already ended");
 
         // does not check for validity of share
         // the checking will be done offchain through publicly veriable secret sharing
@@ -368,33 +410,46 @@ contract AuctionHTLC is Context, ERC721Holder {
 
         emit ContractSetShare(
             _contractId, 
-            _share
+            _share,
+            block.timestamp
         );
     }
 
-    function refund(uint256 _contractId) public {
+    function contractRefund(uint256 _contractId) public {
         Contract storage c = _contracts[_contractId];
         require(c.publisher != address(0), "Contract does not exist");
         require(_msgSender() == c.advertiser, "Not advertiser");
-        // check for shares length and totalShares, if it's 0 that means the validator malfunctioned
+        // check for shares length and totalShares, 
+        // if it's 0 that means the validator malfunctioned
+        // else prevent refund because availability threshold is reached 
+        // % of byzantine validators < availability threshold. 
+        // Otherwise this refund could be invalid as the shares could be withheld 
+        // by a byzantine node
         if (c.shares.length != 0 && c.totalShares != 0) {
             require(
                 c.shares.length < c.totalShares.mul(_availabilityThreshold).div(10000), 
                 "Availability threshold reached"
             );
         }
-        require(!c.refunded, "Already refunded");
-        require(!c.withdrawn, "Already withdrawn");
+        require(c.state == ContractState.START, "Contract already ended");
         // We still keep a timelock in the event the advertiser is still delivering the adslot
         // but have yet to receive sufficient share
         require(c.timelock < block.timestamp, "Timelock not yet passed"); 
 
-        c.refunded = true;
+        c.state = ContractState.REFUND;
+        // refund advertiser
         _zestyToken.transfer(c.advertiser, c.amount);
-        emit ContractRefund(_contractId);
+
+        // return NFT to publisher
+        _zestyNFT.safeTransferFrom(address(this), c.publisher, c.tokenId);
+
+        emit ContractRefund(
+            _contractId,
+            block.timestamp
+        );
     }
 
-    function withdraw(uint256 _contractId, bytes32 _preimage) public {
+    function contractWithdraw(uint256 _contractId, bytes32 _preimage) public {
         Contract storage c = _contracts[_contractId];
         require(c.publisher != address(0), "Contract does not exist");
         require(_msgSender() == c.publisher, "Not publisher");
@@ -402,8 +457,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             c.shares.length >= c.totalShares.mul(_availabilityThreshold).div(10000), 
             "Availability threshold not reached"
         );
-        require(!c.refunded, "Already refunded");
-        require(!c.withdrawn, "Already withdrawn");
+        require(c.state == ContractState.START, "Contract already ended");
         // We still use a hashlock as a final check because length of shares
         // is insufficient to demonstrate that the advertisement has been served
         // possibility of malicious nodes in multi public validator system
@@ -412,7 +466,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             "Hashlock does not match"
         );
 
-        c.withdrawn = true;
+        c.state = ContractState.WITHDRAW;
     
         uint256 burnAmount = c.amount.mul(_burnPerc).div(10000);
         uint256 valAmount = c.amount.mul(_validatorPerc).div(10000);
@@ -427,6 +481,32 @@ contract AuctionHTLC is Context, ERC721Holder {
         // give rest to publisher
         _zestyToken.transfer(c.publisher, remaining);
 
-        emit ContractRefund(_contractId);
+        // Give advertiser NFT for collection
+        _zestyNFT.safeTransferFrom(address(this), c.advertiser, c.tokenId);
+
+        emit ContractRefund(
+            _contractId,
+            block.timestamp
+        );
+    }
+
+    function contractCancel(uint256 _contractId) public {
+        Contract storage c = _contracts[_contractId];
+        require(c.publisher != address(0), "Contract does not exist");
+        require(c.state == ContractState.START, "Contract already ended");
+        require(c.publisher == _msgSender(), "Not publisher");
+
+        c.state = ContractState.CANCEL;
+
+        // Return the advertiser money
+        _zestyToken.transfer(c.advertiser, c.amount);
+
+        // Return the publisher the NFT
+        _zestyNFT.safeTransferFrom(address(this), c.publisher, c.tokenId);
+
+        emit ContractCancel(
+            _contractId,
+            block.timestamp
+        );
     }
 }

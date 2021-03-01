@@ -22,14 +22,12 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeStart,
         uint256 timeEnd,
         string uri,
-        uint256 timeModified
+        uint256 timestamp
     );
     
     event Burn(
         uint256 indexed id,
-        address indexed publisher,
-        string tokenGroup,
-        uint256 timeModified
+        uint256 timestamp
     );
 
     event ModifyToken (
@@ -40,7 +38,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         uint256 timeStart,
         uint256 timeEnd,
         string uri,
-        uint256 timeModified
+        uint256 timestamp
     );
 
     struct tokenData {
@@ -97,20 +95,14 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
         //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "Caller is not owner nor approved");
         
-        // Get tokenData
-        tokenData storage a = _tokenData[_tokenId];
-        
-        emit Burn(
-            _tokenId,
-            a.publisher,
-            a.tokenGroup,
-            block.timestamp
-        );        
-
-        // Clear ad tokenData
         delete _tokenData[_tokenId];
         
         _burn(_tokenId);
+
+        emit Burn(
+            _tokenId,
+            block.timestamp
+        );        
     }
 
     function getTokenData(uint256 tokenId) public view returns (
@@ -189,6 +181,6 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override (ERC721, ERC721Pausable) {
         super._beforeTokenTransfer(from, to, amount);
 
-        require(!paused(), "ERC20Pausable: token transfer while paused");
+        require(!paused(), "Contract has been paused");
     }
 }

@@ -5,7 +5,7 @@ Contracts are deployed on rinkeby
 ```
 ZestyNFT deployed to: 0x8Bd1b77ccef1616E479504e37695388Aee1Ddf54
 ZestyToken deployed to: 0x1eEcbF2D2f55fC49fD62C272AFBafd6b74c6fE8e
-AuctionHTLC deployed to: 0x3A337e59bb6d3401dc305375D8181DdA694F28B28
+AuctionHTLC deployed to: 0x3A337e59bb6d3401dc305375D8181DdA694F28B2
 ```
 
 ## Quickstart

@@ -7,8 +7,10 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract ZestyNFT is ERC721, ERC721Pausable, Ownable { 
+    using SafeMath for uint256;
     uint256 private _tokenCount = 0;
 
     constructor()  ERC721("Zesty Market NFT", "ZESTNFT") {
@@ -88,7 +90,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             block.timestamp
         );
 
-        _tokenCount++;
+        _tokenCount.add(1);
     }
     
     function burn(uint256 _tokenId) public {

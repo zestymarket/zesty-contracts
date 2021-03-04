@@ -26,7 +26,6 @@ async function main() {
   timeNow = await time.latest();
   timeNow = timeNow.toNumber();
 
-  await zestyNFT.setTokenGroupURI(0, 'https://ipfs.io/ipfs/QmUE7A69FH3MobZLGpfprGBfLErbq3HmyX9NDdSJq82Dbv');
   await zestyNFT.mint(
     timeNow + 100,
     timeNow + 100000,
@@ -37,7 +36,7 @@ async function main() {
   await zestyToken.approve(auctionHTLC.address, 10000000);
   await zestyToken.transfer(signers[1].address, 100000);
   await zestyToken.connect(signers[1]).approve(auctionHTLC.address, 10000000)
-  await auctionHTLC.startAuction(
+  await auctionHTLC.auctionStart(
     0,
     1000,
     timeNow + 90000,

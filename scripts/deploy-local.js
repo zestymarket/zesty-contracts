@@ -30,7 +30,6 @@ async function main() {
   await zestyNFT.mint(
     timeNow + 100,
     timeNow + 100000,
-    0,
     'https://ipfs.io/ipfs/QmUE7A69FH3MobZLGpfprGBfLErbq3HmyX9NDdSJq82Dbv',
     'testLocation'
   );

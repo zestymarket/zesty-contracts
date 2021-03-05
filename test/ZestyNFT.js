@@ -23,10 +23,39 @@ describe('ZestyNFT', function() {
     expect(await zestyNFT.symbol()).to.equal('ZESTNFT');
   });
 
-  it('It should be able to create the token successfully', async function() {
+  it('It should be able to create multiple NFTs successfully', async function() {
     await zestyNFT.mint(timeNow + 100, timeNow + 100000, 'uri', 'tokenGroup');
     expect(await zestyNFT.totalSupply()).to.equal(ethers.constants.One);
     expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.constants.One);
+
+    let data = await zestyNFT.getTokenData(0);
+    expect(data.tokenGroup).to.equal('tokenGroup');
+    expect(data.publisher).to.equal(signers[0].address);
+    expect(data.timeStart).to.equal(timeNow + 100);
+    expect(data.timeEnd).to.equal(timeNow + 100000);
+    expect(data.uri).to.equal('uri');
+
+    await zestyNFT.mint(timeNow + 100, timeNow + 100000, 'uri2', 'tokenGroup2');
+    expect(await zestyNFT.totalSupply()).to.equal(ethers.BigNumber.from(2));
+    expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from(2));
+
+    let data2 = await zestyNFT.getTokenData(1);
+    expect(data2.tokenGroup).to.equal('tokenGroup2');
+    expect(data2.publisher).to.equal(signers[0].address);
+    expect(data2.timeStart).to.equal(timeNow + 100);
+    expect(data2.timeEnd).to.equal(timeNow + 100000);
+    expect(data2.uri).to.equal('uri2');
+
+    await zestyNFT.mint(timeNow + 100, timeNow + 100000, 'uri3', 'tokenGroup3');
+    expect(await zestyNFT.totalSupply()).to.equal(ethers.BigNumber.from(3));
+    expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from(3));
+
+    let data3 = await zestyNFT.getTokenData(2);
+    expect(data3.tokenGroup).to.equal('tokenGroup3');
+    expect(data3.publisher).to.equal(signers[0].address);
+    expect(data3.timeStart).to.equal(timeNow + 100);
+    expect(data3.timeEnd).to.equal(timeNow + 100000);
+    expect(data3.uri).to.equal('uri3');
   });
 
   it('It should only allow the owner of the token to set the tokenURI', async function() {

@@ -90,7 +90,7 @@ contract ZestyNFT is ERC721, ERC721Pausable, Ownable {
             block.timestamp
         );
 
-        _tokenCount.add(1);
+        _tokenCount = _tokenCount.add(1);
     }
     
     function burn(uint256 _tokenId) public {

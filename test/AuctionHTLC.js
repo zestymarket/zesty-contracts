@@ -30,16 +30,6 @@ describe('AuctionHTLC', function() {
     zestyToken = await ZestyToken.deploy();
     await zestyToken.deployed();
 
-    timeNow = await time.latest();
-    timeNow = timeNow.toNumber();
-    await zestyNFT.mint(
-      timeNow + 100,
-      timeNow + 100000,
-      'testURI',
-      'tokenGroup'
-    );
-
-
     const AuctionHTLC = await ethers.getContractFactory('AuctionHTLC');
     auctionHTLC = await AuctionHTLC.deploy(
       zestyToken.address,
@@ -47,34 +37,49 @@ describe('AuctionHTLC', function() {
       signers[2].address,
     );
     await auctionHTLC.deployed();
-    
-    await zestyNFT.approve(auctionHTLC.address, 0);
-    await zestyToken.approve(auctionHTLC.address, 10000000);
 
+    timeNow = await time.latest();
+    timeNow = timeNow.toNumber();
+    
+    for (let i = 0; i < 3; i++) {
+      await zestyNFT.mint(
+        timeNow + 100,
+        timeNow + 100000,
+        'testURI' + i.toString(),
+        'tokenGroup' + i.toString()
+      );
+
+
+      await zestyNFT.approve(auctionHTLC.address, i);
+    }
+
+    await zestyToken.approve(auctionHTLC.address, 10000000);
     await zestyToken.transfer(signers[1].address, 100000);
     await zestyToken.connect(signers[1]).approve(auctionHTLC.address, 10000000);
   });
 
-  it('It should start an auction successfully', async function() {
-    await auctionHTLC.auctionStart(
-      0,
-      1000,
-      timeNow + 90000,
-    );
+  it('It should start multiple auctions successfully', async function() {
+    for (let i = 0; i < 3; i++) {
+      await auctionHTLC.auctionStart(
+        i,
+        1000,
+        timeNow + 90000,
+      );
 
-    const data = await auctionHTLC.getAuction(0);
-    expect(data[0]).to.equal(signers[0].address); // publisher
-    expect(data[1]).to.equal(ethers.constants.AddressZero);  // advertiser
-    expect(data[2]).to.equal('tokenGroup');  // tokenGroup
-    expect(data[3]).to.equal(ethers.constants.Zero);  // tokenId
-    expect(data[4]).to.equal(ethers.BigNumber.from(1000));  // startPrice
-    expect(data[6]).to.equal(ethers.BigNumber.from(timeNow + 90000));  // endTime
-    expect(data[7]).to.equal(ethers.BigNumber.from(timeNow + 100000));  // tokenEndTime
-    expect(data[8]).to.equal(ethers.constants.Zero);  // bidPrice
-    expect(data[9]).to.equal(0);  // active
+      const data = await auctionHTLC.getAuction(i);
+      expect(data[0]).to.equal(signers[0].address); // publisher
+      expect(data[1]).to.equal(ethers.constants.AddressZero);  // advertiser
+      expect(data[2]).to.equal("tokenGroup" + i.toString());  // tokenGroup
+      expect(data[3]).to.equal(ethers.BigNumber.from(i));  // tokenId
+      expect(data[4]).to.equal(ethers.BigNumber.from(1000));  // startPrice
+      expect(data[6]).to.equal(ethers.BigNumber.from(timeNow + 90000));  // endTime
+      expect(data[7]).to.equal(ethers.BigNumber.from(timeNow + 100000));  // tokenEndTime
+      expect(data[8]).to.equal(ethers.constants.Zero);  // bidPrice
+      expect(data[9]).to.equal(0);  // start
 
-    // check if contract owns the tokens
-    expect(await zestyNFT.ownerOf(0)).to.equal(auctionHTLC.address);
+      // check if contract owns the tokens
+      expect(await zestyNFT.ownerOf(i)).to.equal(auctionHTLC.address);
+    }
   });
 
   it('It should cancel an auction successfully and return tokens', async function() {
@@ -131,37 +136,58 @@ describe('AuctionHTLC', function() {
     await expect(auctionHTLC.connect(signers[1]).auctionBid(0)).to.be.reverted;
   });
 
-  it('It should allow for bidding on an active auction', async function() {
-    await auctionHTLC.auctionStart(
-      0,
-      1000,
-      timeNow + 90000,
-    );
+  it('It should allow for bidding on multiple active auctions', async function() {
+    for (let i = 0; i < 3; i++) {
+      await auctionHTLC.auctionStart(
+        i,
+        1000,
+        timeNow + 90000,
+      );
 
-    await time.increase(10000);
+      await time.increase(10000);
 
-    await auctionHTLC.connect(signers[1]).auctionBid(0);
-    const data = await auctionHTLC.getAuction(0);
-    expect(data[0]).to.equal(signers[0].address); // publisher
-    expect(data[1]).to.equal(signers[1].address); // advertiser
-    expect(data[9]).to.equal(1);  // active
+      await auctionHTLC.connect(signers[1]).auctionBid(i);
+      const data = await auctionHTLC.getAuction(i);
+      expect(data[0]).to.equal(signers[0].address); // publisher
+      expect(data[1]).to.equal(signers[1].address); // advertiser
+      expect(data[9]).to.equal(1);  // success
 
-    // check if contract has tokens
-    const balance = await zestyToken.balanceOf(auctionHTLC.address);
-    expect(balance).to.equal(ethers.BigNumber.from(899));
+      // check if contract has tokens
+      const balance = await zestyToken.balanceOf(auctionHTLC.address);
+      
 
-    // check if contract is successfully created
-    const contractData = await auctionHTLC.getContract(0);
-    expect(contractData[0]).to.equal(signers[0].address);
-    expect(contractData[1]).to.equal(signers[1].address);
-    expect(contractData[2]).to.equal('tokenGroup');
-    expect(contractData[3]).to.equal(ethers.constants.Zero);
-    expect(contractData[4]).to.equal(ethers.BigNumber.from(899));
-    expect(contractData[5]).to.equal(ethers.constants.HashZero);
-    expect(contractData[6]).to.equal(ethers.BigNumber.from(timeNow + 100000 + 86400));
-    expect(contractData[7]).to.eql([]);
-    expect(contractData[8]).to.equal(0);
-    expect(contractData[9]).to.equal(0);
+      // check if contract is successfully created
+      const contractData = await auctionHTLC.getContract(i);
+      expect(contractData[0]).to.equal(signers[0].address);
+      expect(contractData[1]).to.equal(signers[1].address);
+      expect(contractData[2]).to.equal('tokenGroup' + i.toString());
+      expect(contractData[3]).to.equal(i);
+      expect(contractData[5]).to.equal(ethers.constants.HashZero);
+      expect(contractData[7]).to.eql([]);
+      expect(contractData[8]).to.equal(0);
+      expect(contractData[9]).to.equal(0);
+
+      // unique values due to block time behaviors
+      switch (i) {
+        case 0:
+          expect(contractData[4]).to.equal(ethers.BigNumber.from(899));
+          expect(balance).to.be.equal(ethers.BigNumber.from(899));
+          expect(contractData[6]).to.equal(ethers.BigNumber.from(timeNow + 100000 + 86400));
+          break;
+        
+        case 1:
+          expect(contractData[4]).to.equal(ethers.BigNumber.from(888));
+          expect(balance).to.be.equal(ethers.BigNumber.from(899 + 888));
+          expect(contractData[6]).to.equal(ethers.BigNumber.from(timeNow + 100000 + 86400));
+          break;
+
+        case 2:
+          expect(contractData[4]).to.equal(ethers.BigNumber.from(874));
+          expect(balance).to.be.equal(ethers.BigNumber.from(899 + 888 + 874));
+          expect(contractData[6]).to.equal(ethers.BigNumber.from(timeNow + 100000 + 86400));
+          break;
+      }
+    }
   });
 
   it('It should only allow an advertiser to change token URI upon successful bid', async function() {
@@ -198,7 +224,7 @@ describe('AuctionHTLC', function() {
     const contractData = await auctionHTLC.getContract(0);
     expect(contractData[5]).to.equal(hashlock);
     expect(contractData[8]).to.equal(5);
-
+``
     // distribute shares
     await auctionHTLC.connect(signers[2]).contractSetShare(0, shares[0]);
     await auctionHTLC.connect(signers[2]).contractSetShare(0, shares[1]);
@@ -219,10 +245,16 @@ describe('AuctionHTLC', function() {
       await auctionHTLC.connect(signers[2]).contractSetShare(0, shares[i]);
     }
 
+    // Cannot withdraw with wrong preimage
     await expect(auctionHTLC.contractWithdraw(0, "0x0")).to.be.reverted;
+
+    // Can withdraw with preimage
     await auctionHTLC.contractWithdraw(0, preimage);
     const contractData = await auctionHTLC.getContract(0);
-    expect(contractData[7]);
+    expect(contractData[7]).to.have.same.members(shares);
+    expect(contractData[9]).to.be.equal(1);
+
+    // Cannot withdraw again once the contract has been withdrawn
     await expect(auctionHTLC.contractWithdraw(0, preimage)).to.be.reverted;
 
     // check balance
@@ -235,6 +267,9 @@ describe('AuctionHTLC', function() {
 
     // check if nft has been transferred to the advertiser
     expect(await zestyNFT.balanceOf(signers[1].address)).to.equal(ethers.BigNumber.from(1));
+
+    // check if the state is updated
+    let state = await auctionHTLC.getAuction
   });
 
   it('It should not allow a publisher to withdraw locked funds if service is not done', async function() {
@@ -267,6 +302,24 @@ describe('AuctionHTLC', function() {
     await time.increase(100000 + 86400 + 1);
     await auctionHTLC.connect(signers[1]).contractRefund(0);
     expect(await zestyToken.balanceOf(signers[1].address)).to.equal(ethers.BigNumber.from(100000));
-    expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from(1));
+    expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from(3));
+    const contractData = await auctionHTLC.getContract(0);
+    expect(contractData[9]).to.be.equal(2);
+  });
+
+  it('It should allow a publisher to cancel and return NFT to publisher and tokens to advertiser', async function() {
+    await auctionHTLC.auctionStart(
+      0,
+      1000,
+      timeNow + 90000,
+    );    
+    await auctionHTLC.connect(signers[1]).auctionBid(0);
+
+    // revert if timelock not over
+    await auctionHTLC.contractCancel(0);
+    expect(await zestyToken.balanceOf(signers[1].address)).to.equal(ethers.BigNumber.from(100000));
+    expect(await zestyNFT.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from(3));
+    const contractData = await auctionHTLC.getContract(0);
+    expect(contractData[9]).to.be.equal(3);
   });
 });

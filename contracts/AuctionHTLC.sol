@@ -279,7 +279,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             _timeEndToken,
             block.timestamp
         );
-        _auctionCount.add(1);
+        _auctionCount = _auctionCount.add(1);
     }
 
     function auctionCancel(uint256 _auctionId) public {
@@ -360,7 +360,7 @@ contract AuctionHTLC is Context, ERC721Holder {
             timeNow
         );
 
-         _contractCount.add(1);
+        _contractCount = _contractCount.add(1);
     }
 
     function contractSetTokenURI(uint256 _contractId, string memory _uri) public { 

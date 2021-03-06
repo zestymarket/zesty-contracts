@@ -3,9 +3,9 @@ This repository possesses the smart contracts used by Zesty Market.
 
 Contracts are deployed on rinkeby
 ```
-ZestyNFT deployed to: 0xcAC352D8e8F8692eE36A354Fe19d5ad08b3f7053
-ZestyToken deployed to: 0x4cA67EcEA292E8Fa348Adc8C47072DB7c6475870
-AuctionHTLC deployed to: 0x5dd08b80F3c71E1292f242aAFD8b92AD0Bfd1B2d
+ZestyNFT deployed to: 0xe369593dCdf6E036084ADB8db663A5B6033984d4
+ZestyToken deployed to: 0x71d13b5a03967b57Dce4b55531487150d2640266
+AuctionHTLC deployed to: 0x32963E13D8B9d6BfB7562A442CE85801c9903Cb0
 ```
 
 ## Quickstart

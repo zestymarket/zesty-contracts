@@ -237,14 +237,14 @@ contract AuctionHTLC is Context, ERC721Holder {
         string memory _tokenGroup;
         address _publisher;
         uint256 _timeCreated;
-        uint256 _tokenTimeStart;
+        uint256 _timeStartToken;
         uint256 _timeEndToken;
         string memory _uri;
 
         (_tokenGroup,
          _publisher,
          _timeCreated,
-         _tokenTimeStart,
+         _timeStartToken,
          _timeEndToken,
          _uri) = _zestyNFT.getTokenData(_tokenId);
 

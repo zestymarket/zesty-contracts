@@ -24,7 +24,7 @@ PRIVATE_KEY=<Get this from your eth account>
 ```
 npx hardhat compile
 npx hardhat test
-npx hardhat run scripts/deploy.js  // local deploy
+npx hardhat run scripts/deploy-local.js --network ganache // local deploy
 npx hardhat run scripts/deploy.js --network rinkeby  // rinkeby deploy
 ```
 
